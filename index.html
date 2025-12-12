@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#18181b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KB Forge">
+    <title>Kettlebell Forge | Sport Timer</title>
+    <meta name="description" content="Professional Kettlebell Sport Timer for Competition Training - Long Cycle, Snatch, Jerk">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiS2V0dGxlYmVsbCBGb3JnZSIsInNob3J0X25hbWUiOiJLQiBGb3JnZSIsImRlc2NyaXB0aW9uIjoiUHJvZmVzc2lvbmFsIEtldHRsZWJlbGwgU3BvcnQgVGltZXIiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzA5MDkwYiIsInRoZW1lX2NvbG9yIjoiIzE4MTgxYiIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDEwMCAxMDAnJTNFJTNDcmVjdCB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgZmlsbD0nJTIzMTgxODFiJy8lM0UlM0NwYXRoIGQ9J001MCAyMGMtOCAwLTE1IDctMTUgMTUgMCA1IDIuNSAxMCA2LjUgMTNsLTQgMTJoMjVsLTQtMTJjNC0zIDYuNS04IDYuNS0xMyAwLTgtNy0xNS0xNS0xNXptMCA2YzUgMCA5IDQgOSA5cy00IDktOSA5LTktNC05LTkgNC05IDktOXptLTE4IDMwdjNjMCA5IDggMTYgMTggMTZzMTgtNyAxOC0xNnYtM2gtMzZ6JyBmaWxsPSclMjNmYmJmMjQnLyUzRSUzQy9zdmclM0UiLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCJ9XX0=">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2318181b'/%3E%3Cpath d='M50 20c-8 0-15 7-15 15 0 5 2.5 10 6.5 13l-4 12h25l-4-12c4-3 6.5-8 6.5-13 0-8-7-15-15-15zm0 6c5 0 9 4 9 9s-4 9-9 9-9-4-9-9 4-9 9-9zm-18 30v3c0 9 8 16 18 16s18-7 18-16v-3h-36z' fill='%23fbbf24'/%3E%3C/svg%3E">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        html, body, #root { height: 100%; margin: 0; padding: 0; overflow-x: hidden; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #09090b; color: #fafafa; overscroll-behavior-y: contain; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #27272a; }
+        ::-webkit-scrollbar-thumb { background: #52525b; border-radius: 3px; }
+        @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+        .animate-ping { animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useRef, useMemo } = React;
+
+        // ═══════════════════════════════════════════════════════════════
+        // STORAGE
+        // ═══════════════════════════════════════════════════════════════
+        const STORAGE_KEY = 'kettlebell-forge-settings-v3';
+
+        const saveSettings = (settings) => {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch (e) {}
+        };
+
+        const loadSettings = () => {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                return saved ? JSON.parse(saved) : null;
+            } catch (e) { return null; }
+        };
+
+        // ═══════════════════════════════════════════════════════════════
+        // ICONS
+        // ═══════════════════════════════════════════════════════════════
+        
+        const Icon = ({ name, className = "w-5 h-5" }) => {
+            const icons = {
+                play: <polygon points="5 3 19 12 5 21 5 3"></polygon>,
+                pause: <><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></>,
+                reset: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></>,
+                chevronDown: <path d="m6 9 6 6 6-6"></path>,
+                chevronUp: <path d="m18 15-6-6-6 6"></path>,
+                volumeOn: <><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></>,
+                volumeOff: <><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="22" y1="9" x2="16" y2="15"></line><line x1="16" y1="9" x2="22" y2="15"></line></>,
+                flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>,
+                shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>,
+                target: <><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></>,
+                clock: <><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></>,
+                repeat: <><path d="m17 2 4 4-4 4"></path><path d="M3 11v-1a4 4 0 0 1 4-4h14"></path><path d="m7 22-4-4 4-4"></path><path d="M21 13v1a4 4 0 0 1-4 4H3"></path></>,
+                zap: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>,
+                settings: <><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></>,
+                trophy: <><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></>,
+                dumbbell: <><path d="m6.5 6.5 11 11"></path><path d="m21 21-1-1"></path><path d="m3 3 1 1"></path><path d="m18 22 4-4"></path><path d="m2 6 4-4"></path><path d="m3 10 7-7"></path><path d="m14 21 7-7"></path></>,
+                timer: <><line x1="10" x2="14" y1="2" y2="2"></line><line x1="12" x2="15" y1="14" y2="11"></line><circle cx="12" cy="14" r="8"></circle></>,
+                heartPulse: <><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"></path></>,
+                gauge: <><path d="m12 14 4-4"></path><path d="M3.34 19a10 10 0 1 1 17.32 0"></path></>,
+                layers: <><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></>,
+                info: <><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></>,
+                plus: <><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></>,
+                minus: <line x1="5" y1="12" x2="19" y2="12"></line>,
+                vibrate: <><path d="m2 8 2 2-2 2 2 2-2 2"></path><path d="m22 8-2 2 2 2-2 2 2 2"></path><rect width="8" height="14" x="8" y="5" rx="1"></rect></>,
+                share: <><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></>,
+                edit: <><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></>,
+                x: <><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></>,
+            };
+            return (
+                <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {icons[name]}
+                </svg>
+            );
+        };
+
+        const KettlebellIcon = ({ className = "" }) => (
+            <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+                <path d="M12 2C9.5 2 7.5 4 7.5 6.5c0 1.5.7 2.8 1.8 3.7L8 14h8l-1.3-3.8c1.1-.9 1.8-2.2 1.8-3.7C16.5 4 14.5 2 12 2zm0 2c1.4 0 2.5 1.1 2.5 2.5S13.4 9 12 9s-2.5-1.1-2.5-2.5S10.6 4 12 4zM7 15v1c0 2.8 2.2 5 5 5s5-2.2 5-5v-1H7z"/>
+            </svg>
+        );
+
+        // ═══════════════════════════════════════════════════════════════
+        // DATA
+        // ═══════════════════════════════════════════════════════════════
+
+        const EXERCISES = [
+            { name: 'Long Cycle', id: 'long-cycle', icon: 'repeat', description: 'Clean + Jerk combo' },
+            { name: 'Snatch', id: 'snatch', icon: 'zap', description: 'Single fluid motion' },
+            { name: 'Jerk', id: 'jerk', icon: 'flame', description: 'From rack position' },
+            { name: 'Push Press', id: 'push-press', icon: 'shield', description: 'Leg drive press' }
+        ];
+
+        // Sound options with waveform type
+        const SOUND_OPTIONS = [
+            { name: 'Campana', workFreq: 800, restFreq: 600, id: 'bell', wave: 'sine' },
+            { name: 'Corno', workFreq: 220, restFreq: 180, id: 'horn', wave: 'sawtooth' },
+            { name: 'Acciaio', workFreq: 1200, restFreq: 400, id: 'strike', wave: 'triangle' },
+        ];
+
+        const WORKOUT_TEMPLATES = [
+            {
+                id: 'competition',
+                name: "Competition",
+                icon: 'trophy',
+                color: 'amber',
+                description: "Set ufficiali 10' (specificità massima)",
+                variants: [
+                    { name: "Long Cycle 10'", exercise: "long-cycle", duration: 600, cadence: 8,  restDuration: 180, rounds: 1, intensity: 5 },
+                    { name: "Jerk 10'",       exercise: "jerk",       duration: 600, cadence: 10, restDuration: 180, rounds: 1, intensity: 5 },
+                    { name: "Snatch 10'",     exercise: "snatch",     duration: 600, cadence: 15, restDuration: 180, rounds: 1, intensity: 5 },
+                    { name: "Push Press 10'", exercise: "push-press", duration: 600, cadence: 12, restDuration: 180, rounds: 1, intensity: 4 }
+                ]
+            },
+            {
+                id: 'precomp',
+                name: "Pre-Comp",
+                icon: 'gauge',
+                color: 'amber',
+                description: "8–10' a ritmo gara (pacing + efficienza)",
+                variants: [
+                    { name: "LC 8' @ pace",     exercise: "long-cycle", duration: 480, cadence: 8,  restDuration: 180, rounds: 1, intensity: 4 },
+                    { name: "Jerk 8' @ pace",   exercise: "jerk",       duration: 480, cadence: 10, restDuration: 180, rounds: 1, intensity: 4 },
+                    { name: "Snatch 8' @ pace", exercise: "snatch",     duration: 480, cadence: 15, restDuration: 180, rounds: 1, intensity: 4 },
+                    { name: "LC 10' @ -1rpm",   exercise: "long-cycle", duration: 600, cadence: 7,  restDuration: 180, rounds: 1, intensity: 4 }
+                ]
+            },
+            {
+                id: 'repeats',
+                name: "Repeats 3–5'",
+                icon: 'layers',
+                color: 'cyan',
+                description: "3–5' × 3–6 set (ponte aerobico/anaerobico)",
+                variants: [
+                    { name: "LC 4' ×4 (r 4')",      exercise: "long-cycle", duration: 240, cadence: 8,  restDuration: 240, rounds: 4, intensity: 4 },
+                    { name: "Jerk 4' ×4 (r 4')",    exercise: "jerk",       duration: 240, cadence: 10, restDuration: 240, rounds: 4, intensity: 4 },
+                    { name: "Snatch 4' ×4 (r 3')",  exercise: "snatch",     duration: 240, cadence: 16, restDuration: 180, rounds: 4, intensity: 4 },
+                    { name: "PP 3' ×5 (r 3')",      exercise: "push-press", duration: 180, cadence: 12, restDuration: 180, rounds: 5, intensity: 3 }
+                ]
+            },
+            {
+                id: 'intervals',
+                name: "Intervals 1:1 / 2:2",
+                icon: 'repeat',
+                color: 'rose',
+                description: "Qualità alta con recupero completo",
+                variants: [
+                    { name: "LC 1'/1' ×10",     exercise: "long-cycle", duration: 60,  cadence: 10, restDuration: 60,  rounds: 10, intensity: 5 },
+                    { name: "Jerk 1'/1' ×10",   exercise: "jerk",       duration: 60,  cadence: 12, restDuration: 60,  rounds: 10, intensity: 5 },
+                    { name: "Snatch 1'/1' ×10", exercise: "snatch",     duration: 60,  cadence: 20, restDuration: 60,  rounds: 10, intensity: 5 },
+                    { name: "LC 2'/2' ×6",      exercise: "long-cycle", duration: 120, cadence: 9,  restDuration: 120, rounds: 6,  intensity: 4 }
+                ]
+            },
+            {
+                id: 'power',
+                name: "Power / Lattato",
+                icon: 'flame',
+                color: 'rose',
+                description: "1' on / 20–30'' off (densità e tolleranza)",
+                variants: [
+                    { name: "LC 1'/20'' ×12",     exercise: "long-cycle", duration: 60, cadence: 12, restDuration: 20, rounds: 12, intensity: 5 },
+                    { name: "Jerk 1'/20'' ×12",   exercise: "jerk",       duration: 60, cadence: 14, restDuration: 20, rounds: 12, intensity: 5 },
+                    { name: "Snatch 1'/20'' ×10", exercise: "snatch",     duration: 60, cadence: 22, restDuration: 20, rounds: 10, intensity: 5 },
+                    { name: "PP 1'/30'' ×10",     exercise: "push-press", duration: 60, cadence: 14, restDuration: 30, rounds: 10, intensity: 4 }
+                ]
+            },
+            {
+                id: 'aerobic',
+                name: "Aerobic Base",
+                icon: 'heartPulse',
+                color: 'emerald',
+                description: "6–8' sotto soglia (efficienza + volume pulito)",
+                variants: [
+                    { name: "LC 6' ×2 (r 3')",    exercise: "long-cycle", duration: 360, cadence: 7,  restDuration: 180, rounds: 2, intensity: 3 },
+                    { name: "Jerk 6' ×2 (r 3')",  exercise: "jerk",       duration: 360, cadence: 9,  restDuration: 180, rounds: 2, intensity: 3 },
+                    { name: "Snatch 6' ×2 (r 3')",exercise: "snatch",     duration: 360, cadence: 14, restDuration: 180, rounds: 2, intensity: 3 },
+                    { name: "PP 8' ×2 (r 3')",    exercise: "push-press", duration: 480, cadence: 10, restDuration: 180, rounds: 2, intensity: 2 }
+                ]
+            },
+            {
+                id: 'technique',
+                name: "Tecnica",
+                icon: 'target',
+                color: 'emerald',
+                description: "Forma, timing, rilassamento",
+                variants: [
+                    { name: "LC Precision 2' ×6",  exercise: "long-cycle", duration: 120, cadence: 6,  restDuration: 60, rounds: 6, intensity: 2 },
+                    { name: "Jerk Timing 3' ×4",   exercise: "jerk",       duration: 180, cadence: 8,  restDuration: 90, rounds: 4, intensity: 2 },
+                    { name: "Snatch Drills 2' ×6", exercise: "snatch",     duration: 120, cadence: 10, restDuration: 60, rounds: 6, intensity: 2 },
+                    { name: "PP Groove 2' ×6",     exercise: "push-press", duration: 120, cadence: 10, restDuration: 60, rounds: 6, intensity: 2 }
+                ]
+            },
+            {
+                id: 'heavy',
+                name: "Heavy Bells",
+                icon: 'dumbbell',
+                color: 'amber',
+                description: "2–3' con recuperi lunghi (forza-resistenza)",
+                variants: [
+                    { name: "LC Heavy 2' ×8 (r 2')",    exercise: "long-cycle", duration: 120, cadence: 6,  restDuration: 120, rounds: 8, intensity: 5 },
+                    { name: "Jerk Heavy 2' ×8 (r 2')", exercise: "jerk",       duration: 120, cadence: 8,  restDuration: 120, rounds: 8, intensity: 5 },
+                    { name: "Snatch Heavy 2' ×6 (r 3')",exercise: "snatch",    duration: 120, cadence: 12, restDuration: 180, rounds: 6, intensity: 4 },
+                    { name: "PP Heavy 3' ×6 (r 3')",   exercise: "push-press", duration: 180, cadence: 10, restDuration: 180, rounds: 6, intensity: 4 }
+                ]
+            },
+            {
+                id: 'overdistance',
+                name: "Overdistance 12–15'",
+                icon: 'clock',
+                color: 'cyan',
+                description: "Durability oltre il 10' (controllo ritmo)",
+                variants: [
+                    { name: "LC 12' steady",     exercise: "long-cycle", duration: 720, cadence: 7,  restDuration: 180, rounds: 1, intensity: 4 },
+                    { name: "Jerk 12' steady",   exercise: "jerk",       duration: 720, cadence: 9,  restDuration: 180, rounds: 1, intensity: 4 },
+                    { name: "Snatch 12' steady", exercise: "snatch",     duration: 720, cadence: 14, restDuration: 180, rounds: 1, intensity: 4 },
+                    { name: "LC 15' easy",       exercise: "long-cycle", duration: 900, cadence: 6,  restDuration: 180, rounds: 1, intensity: 3 }
+                ]
+            },
+            {
+                id: 'pyramids',
+                name: "Piramidi",
+                icon: 'layers',
+                color: 'rose',
+                description: "Merkulin-style: blocchi progressivi 1-2-3-4-3-2-1",
+                variants: [
+                    { 
+                        name: "Merkulin LC", 
+                        exercise: "long-cycle", 
+                        cadence: 8,
+                        intensity: 5,
+                        blocks: [
+                            { duration: 60,  restDuration: 60, label: "1'" },
+                            { duration: 120, restDuration: 60, label: "2'" },
+                            { duration: 180, restDuration: 60, label: "3'" },
+                            { duration: 240, restDuration: 60, label: "4'" },
+                            { duration: 180, restDuration: 60, label: "3'" },
+                            { duration: 120, restDuration: 60, label: "2'" },
+                            { duration: 60,  restDuration: 0,  label: "1'" }
+                        ]
+                    },
+                    { 
+                        name: "Merkulin Jerk", 
+                        exercise: "jerk", 
+                        cadence: 10,
+                        intensity: 5,
+                        blocks: [
+                            { duration: 60,  restDuration: 60, label: "1'" },
+                            { duration: 120, restDuration: 60, label: "2'" },
+                            { duration: 180, restDuration: 60, label: "3'" },
+                            { duration: 240, restDuration: 60, label: "4'" },
+                            { duration: 180, restDuration: 60, label: "3'" },
+                            { duration: 120, restDuration: 60, label: "2'" },
+                            { duration: 60,  restDuration: 0,  label: "1'" }
+                        ]
+                    },
+                    { 
+                        name: "Merkulin Snatch", 
+                        exercise: "snatch", 
+                        cadence: 15,
+                        intensity: 5,
+                        blocks: [
+                            { duration: 60,  restDuration: 60, label: "1'" },
+                            { duration: 120, restDuration: 60, label: "2'" },
+                            { duration: 180, restDuration: 60, label: "3'" },
+                            { duration: 240, restDuration: 60, label: "4'" },
+                            { duration: 180, restDuration: 60, label: "3'" },
+                            { duration: 120, restDuration: 60, label: "2'" },
+                            { duration: 60,  restDuration: 0,  label: "1'" }
+                        ]
+                    },
+                    { 
+                        name: "Mini Pyramid LC", 
+                        exercise: "long-cycle", 
+                        cadence: 8,
+                        intensity: 4,
+                        blocks: [
+                            { duration: 60,  restDuration: 60, label: "1'" },
+                            { duration: 120, restDuration: 60, label: "2'" },
+                            { duration: 180, restDuration: 60, label: "3'" },
+                            { duration: 120, restDuration: 60, label: "2'" },
+                            { duration: 60,  restDuration: 0,  label: "1'" }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        const SINGLE_KB_WEIGHTS = [8, 12, 16, 20, 24, 28, 32, 36, 40, 48];
+        const DOUBLE_KB_WEIGHTS = [8, 12, 16, 20, 24, 28, 32, 36, 40, 48];
+        const REST_DURATIONS = [10, 20, 30, 60, 90, 120, 180, 240, 300];
+        const ROUNDS_OPTIONS = Array.from({length: 15}, (_, i) => i + 1);
+        const CADENCE_OPTIONS = [4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 22];
+        const DURATION_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10, 12, 15];
+
+        // ═══════════════════════════════════════════════════════════════
+        // COMPONENTS
+        // ═══════════════════════════════════════════════════════════════
+
+        const IntensityDots = ({ level, color }) => (
+            <div className="flex gap-1">
+                {[1,2,3,4,5].map(i => (
+                    <div 
+                        key={i} 
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ backgroundColor: i <= level ? 
+                            (color === 'amber' ? '#fbbf24' : color === 'emerald' ? '#34d399' : color === 'cyan' ? '#22d3ee' : '#fb7185') 
+                            : '#3f3f46' 
+                        }}
+                    />
+                ))}
+            </div>
+        );
+
+        const SettingGroup = ({ title, icon, children }) => (
+            <div className="bg-zinc-800/30 rounded-2xl p-4 border border-zinc-700/30">
+                <div className="flex items-center gap-2 mb-3">
+                    <Icon name={icon} className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm font-medium text-zinc-300 uppercase tracking-wider">{title}</span>
+                </div>
+                {children}
+            </div>
+        );
+
+        const OptionButton = ({ selected, onClick, children, color = 'amber', size = 'md', disabled = false }) => {
+            const sizeClasses = size === 'sm' ? 'py-2 px-2 text-xs' : 'py-3 px-3 text-sm';
+            const bgColor = color === 'amber' ? 'bg-amber-500' : color === 'emerald' ? 'bg-emerald-500' : color === 'cyan' ? 'bg-cyan-500' : 'bg-rose-500';
+            
+            return (
+                <button
+                    onClick={onClick}
+                    disabled={disabled}
+                    className={`${sizeClasses} rounded-xl font-bold transition-all ${
+                        selected ? `${bgColor} text-zinc-900` : 'bg-zinc-800/80 border border-zinc-700/50 text-zinc-300 active:bg-zinc-700'
+                    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    {children}
+                </button>
+            );
+        };
+
+        // Delta-based rep adjuster
+        const RepAdjuster = ({ value, onDeltaChange, delta, disabled = false }) => {
+            return (
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => onDeltaChange(delta - 1)}
+                        disabled={disabled || value <= 0}
+                        className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center active:bg-zinc-700 transition-all disabled:opacity-50"
+                    >
+                        <Icon name="minus" className="w-4 h-4 text-zinc-300" />
+                    </button>
+                    <div className="text-center min-w-[60px]">
+                        <p className="text-2xl font-bold text-emerald-400">{value}</p>
+                        {delta !== 0 && (
+                            <p className={`text-xs font-medium ${delta > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {delta > 0 ? '+' : ''}{delta}
+                            </p>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => onDeltaChange(delta + 1)}
+                        disabled={disabled}
+                        className="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center active:bg-zinc-700 transition-all disabled:opacity-50"
+                    >
+                        <Icon name="plus" className="w-4 h-4 text-zinc-300" />
+                    </button>
+                </div>
+            );
+        };
+
+        // ═══════════════════════════════════════════════════════════════
+        // MAIN APP
+        // ═══════════════════════════════════════════════════════════════
+
+        const NorseKettlebellTimer = () => {
+            const savedSettings = useRef(loadSettings());
+            
+            const [activeTab, setActiveTab] = useState(savedSettings.current?.activeTab || 'timer');
+            const [selectedTemplate, setSelectedTemplate] = useState(null);
+            const [selectedCategory, setSelectedCategory] = useState(null);
+            const [selectedSound, setSelectedSound] = useState(
+                SOUND_OPTIONS.find(s => s.id === savedSettings.current?.soundId) || SOUND_OPTIONS[0]
+            );
+            const [soundEnabled, setSoundEnabled] = useState(savedSettings.current?.soundEnabled ?? true);
+            const [hapticsEnabled, setHapticsEnabled] = useState(savedSettings.current?.hapticsEnabled ?? true);
+            const [timeLeft, setTimeLeft] = useState(savedSettings.current?.duration || 600);
+            const [isRunning, setIsRunning] = useState(false);
+            const [cadence, setCadence] = useState(savedSettings.current?.cadence || 8);
+            const [duration, setDuration] = useState(savedSettings.current?.duration || 600);
+            const [restDuration, setRestDuration] = useState(savedSettings.current?.restDuration || 60);
+            const [isResting, setIsResting] = useState(false);
+            const [isPreparing, setIsPreparing] = useState(false);
+            const [rounds, setRounds] = useState(savedSettings.current?.rounds || 1);
+            const [currentRound, setCurrentRound] = useState(1);
+            const [beatPulse, setBeatPulse] = useState(false);
+            const [completedSession, setCompletedSession] = useState(null);
+            const [selectedExercise, setSelectedExercise] = useState(
+                EXERCISES.find(e => e.id === savedSettings.current?.exerciseId) || EXERCISES[0]
+            );
+            const [isDoubleKettlebell, setIsDoubleKettlebell] = useState(savedSettings.current?.isDouble ?? false);
+            const [kettlebellWeight, setKettlebellWeight] = useState(savedSettings.current?.weight || 24);
+            const [showQuickEdit, setShowQuickEdit] = useState(false);
+            const [sessionStarted, setSessionStarted] = useState(false);
+            
+            // Accordion state for templates tab (single-open)
+            const [expandedCategoryId, setExpandedCategoryId] = useState(null);
+            
+            // Auto reps + delta model
+            const [autoReps, setAutoReps] = useState(0);
+            const [deltaReps, setDeltaReps] = useState(0);
+            
+            // Block-based workouts (pyramids)
+            const [activeBlocks, setActiveBlocks] = useState(null); // Array of blocks or null
+            const [currentBlock, setCurrentBlock] = useState(0); // 0-indexed
+            const isBlockMode = activeBlocks !== null && activeBlocks.length > 0;
+            
+            const PREP_TIME = 10;
+            
+            // Refs
+            const endTimestampRef = useRef(null);
+            const audioContextRef = useRef(null);
+            const wakeLockRef = useRef(null);
+            const currentBeatRef = useRef(0);
+            const roundRepsRef = useRef([]);
+            const autoRepsRef = useRef(0);
+            const animationFrameRef = useRef(null);
+            const lastTimeLeftRef = useRef(null);
+
+            // Derived actual reps
+            const actualReps = Math.max(0, autoReps + deltaReps);
+
+            // ═══════════════════════════════════════════════════════════════
+            // DERIVED VALUES
+            // ═══════════════════════════════════════════════════════════════
+            
+            const getTotalLoad = useCallback(() => 
+                isDoubleKettlebell ? kettlebellWeight * 2 : kettlebellWeight, 
+                [isDoubleKettlebell, kettlebellWeight]
+            );
+            
+            const getWeightDisplay = useCallback(() => 
+                isDoubleKettlebell ? `2×${kettlebellWeight}kg` : `${kettlebellWeight}kg`,
+                [isDoubleKettlebell, kettlebellWeight]
+            );
+
+            const plannedRepsPerRound = useMemo(() => 
+                Math.floor((duration / 60) * cadence),
+                [duration, cadence]
+            );
+            
+            // For block mode, calculate total from all blocks
+            const plannedRepsTotal = useMemo(() => {
+                if (isBlockMode && activeBlocks) {
+                    return activeBlocks.reduce((total, block) => {
+                        return total + Math.floor((block.duration / 60) * cadence);
+                    }, 0);
+                }
+                return plannedRepsPerRound * rounds;
+            }, [isBlockMode, activeBlocks, plannedRepsPerRound, rounds, cadence]);
+
+            const plannedVolume = useMemo(() => 
+                plannedRepsTotal * getTotalLoad(),
+                [plannedRepsTotal, getTotalLoad]
+            );
+
+            const actualVolume = useMemo(() => 
+                actualReps * getTotalLoad(),
+                [actualReps, getTotalLoad]
+            );
+
+            // ═══════════════════════════════════════════════════════════════
+            // SETTINGS PERSISTENCE
+            // ═══════════════════════════════════════════════════════════════
+            
+            useEffect(() => {
+                saveSettings({
+                    activeTab,
+                    soundId: selectedSound.id,
+                    soundEnabled,
+                    hapticsEnabled,
+                    duration,
+                    restDuration,
+                    cadence,
+                    rounds,
+                    exerciseId: selectedExercise.id,
+                    isDouble: isDoubleKettlebell,
+                    weight: kettlebellWeight,
+                });
+            }, [activeTab, selectedSound, soundEnabled, hapticsEnabled, duration, restDuration, cadence, rounds, selectedExercise, isDoubleKettlebell, kettlebellWeight]);
+
+            // ═══════════════════════════════════════════════════════════════
+            // AUDIO - Improved with proper envelope and cleanup
+            // ═══════════════════════════════════════════════════════════════
+            
+            const getAudioContext = useCallback(() => {
+                if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+                    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContextRef.current.state === 'suspended') {
+                    audioContextRef.current.resume();
+                }
+                return audioContextRef.current;
+            }, []);
+
+            const createBeep = useCallback((frequency = selectedSound.workFreq, dur = 120, waveType = selectedSound.wave) => {
+                if (!soundEnabled) return;
+                try {
+                    const ctx = getAudioContext();
+                    const now = ctx.currentTime;
+                    const durationSec = dur / 1000;
+                    
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+                    
+                    oscillator.type = waveType || 'sine';
+                    oscillator.frequency.setValueAtTime(frequency, now);
+                    
+                    // Soft envelope to avoid clicks
+                    const attackTime = 0.01;
+                    const releaseTime = 0.05;
+                    const peakGain = 0.25; // Lower gain to avoid clipping
+                    
+                    gainNode.gain.setValueAtTime(0, now);
+                    gainNode.gain.linearRampToValueAtTime(peakGain, now + attackTime);
+                    gainNode.gain.setValueAtTime(peakGain, now + durationSec - releaseTime);
+                    gainNode.gain.linearRampToValueAtTime(0, now + durationSec);
+                    
+                    oscillator.start(now);
+                    oscillator.stop(now + durationSec);
+                    
+                    // Cleanup on end
+                    oscillator.onended = () => {
+                        oscillator.disconnect();
+                        gainNode.disconnect();
+                    };
+                } catch (e) {
+                    console.warn('Audio error:', e);
+                }
+            }, [selectedSound, soundEnabled, getAudioContext]);
+
+            const vibrate = useCallback((pattern, force = false) => {
+                if (!hapticsEnabled && !force) return;
+                if (navigator.vibrate) navigator.vibrate(pattern);
+            }, [hapticsEnabled]);
+
+            // ═══════════════════════════════════════════════════════════════
+            // WAKE LOCK
+            // ═══════════════════════════════════════════════════════════════
+            
+            const requestWakeLock = async () => {
+                try {
+                    if ('wakeLock' in navigator && !wakeLockRef.current) {
+                        wakeLockRef.current = await navigator.wakeLock.request('screen');
+                    }
+                } catch (e) {}
+            };
+
+            const releaseWakeLock = useCallback(() => {
+                if (wakeLockRef.current) {
+                    wakeLockRef.current.release().catch(() => {});
+                    wakeLockRef.current = null;
+                }
+            }, []);
+
+            // ═══════════════════════════════════════════════════════════════
+            // SESSION COMPLETION
+            // ═══════════════════════════════════════════════════════════════
+            
+            const finishSession = useCallback((finalAutoReps, roundsData) => {
+                const totalLoad = isDoubleKettlebell ? kettlebellWeight * 2 : kettlebellWeight;
+                const finalActualReps = Math.max(0, finalAutoReps + deltaReps);
+                
+                // Calculate total work time (block mode vs standard)
+                const workSeconds = isBlockMode && activeBlocks 
+                    ? activeBlocks.reduce((s, b) => s + b.duration, 0) 
+                    : duration * rounds;
+                
+                setCompletedSession({
+                    exercise: selectedExercise.name,
+                    plannedReps: plannedRepsTotal,
+                    actualReps: finalActualReps,
+                    plannedVolume: plannedRepsTotal * totalLoad,
+                    actualVolume: finalActualReps * totalLoad,
+                    rounds: isBlockMode ? activeBlocks.length : rounds,
+                    roundsData: roundsData || [],
+                    duration: workSeconds,
+                    cadence,
+                    weight: isDoubleKettlebell ? `2×${kettlebellWeight}kg` : `${kettlebellWeight}kg`,
+                    totalLoad
+                });
+                
+                setIsRunning(false);
+                setTimeLeft(duration);
+                setIsResting(false);
+                setIsPreparing(false);
+                setCurrentRound(1);
+                setAutoReps(0);
+                setDeltaReps(0);
+                setSessionStarted(false);
+                endTimestampRef.current = null;
+                currentBeatRef.current = 0;
+                autoRepsRef.current = 0;
+                roundRepsRef.current = [];
+                lastTimeLeftRef.current = null;
+                releaseWakeLock();
+            }, [plannedRepsTotal, deltaReps, selectedExercise, isDoubleKettlebell, kettlebellWeight, rounds, duration, cadence, releaseWakeLock, isBlockMode, activeBlocks]);
+
+            // ═══════════════════════════════════════════════════════════════
+            // TIMER LOGIC - FIXED: Single rAF scheduling
+            // ═══════════════════════════════════════════════════════════════
+            
+            useEffect(() => {
+                if (!isRunning) {
+                    if (animationFrameRef.current) {
+                        cancelAnimationFrame(animationFrameRef.current);
+                        animationFrameRef.current = null;
+                    }
+                    return;
+                }
+                
+                const tick = () => {
+                    if (!endTimestampRef.current) {
+                        animationFrameRef.current = requestAnimationFrame(tick);
+                        return;
+                    }
+                    
+                    const now = Date.now();
+                    const newTimeLeft = Math.max(0, Math.ceil((endTimestampRef.current - now) / 1000));
+                    
+                    // Only process when second changes
+                    if (newTimeLeft !== lastTimeLeftRef.current) {
+                        lastTimeLeftRef.current = newTimeLeft;
+                        
+                        // Beat logic (work phase only, before completion)
+                        if (!isResting && !isPreparing && newTimeLeft > 0) {
+                            const currentDuration = isBlockMode ? activeBlocks[currentBlock].duration : duration;
+                            const elapsedSeconds = currentDuration - newTimeLeft;
+                            const expectedBeat = Math.floor(elapsedSeconds * (cadence / 60));
+                            
+                            if (expectedBeat > currentBeatRef.current) {
+                                currentBeatRef.current = expectedBeat;
+                                
+                                createBeep(selectedSound.workFreq, 100, selectedSound.wave);
+                                setBeatPulse(true);
+                                setTimeout(() => setBeatPulse(false), 150);
+                                
+                                const prevRoundsReps = roundRepsRef.current.reduce((a, b) => a + b, 0);
+                                const newAutoReps = prevRoundsReps + expectedBeat;
+                                setAutoReps(newAutoReps);
+                                autoRepsRef.current = newAutoReps;
+                                
+                                if (expectedBeat % 10 === 0 || newTimeLeft <= 10) {
+                                    vibrate(30);
+                                }
+                            }
+                        }
+                        
+                        // Prep countdown beeps
+                        if (isPreparing && newTimeLeft <= 3 && newTimeLeft > 0) {
+                            createBeep(500, 150, 'sine');
+                            vibrate(50, true);
+                        }
+                        
+                        // Completion logic
+                        if (newTimeLeft <= 0) {
+                            if (isPreparing) {
+                                // Prep complete -> start work
+                                setIsPreparing(false);
+                                const workDuration = isBlockMode ? activeBlocks[0].duration : duration;
+                                endTimestampRef.current = Date.now() + workDuration * 1000;
+                                createBeep(700, 300, 'sine');
+                                vibrate([100, 50, 100], true);
+                                currentBeatRef.current = 0;
+                                lastTimeLeftRef.current = workDuration;
+                                setTimeLeft(workDuration);
+                                if (isBlockMode) {
+                                    setDuration(workDuration);
+                                }
+                                
+                            } else if (isResting) {
+                                // Rest complete -> next work phase
+                                if (isBlockMode) {
+                                    // Block mode: move to next block
+                                    const nextBlock = currentBlock + 1;
+                                    if (nextBlock < activeBlocks.length) {
+                                        setCurrentBlock(nextBlock);
+                                        const nextDuration = activeBlocks[nextBlock].duration;
+                                        setDuration(nextDuration);
+                                        setRestDuration(activeBlocks[nextBlock].restDuration);
+                                        setIsResting(false);
+                                        endTimestampRef.current = Date.now() + nextDuration * 1000;
+                                        createBeep(700, 300, 'sine');
+                                        vibrate([100, 50, 100], true);
+                                        currentBeatRef.current = 0;
+                                        lastTimeLeftRef.current = nextDuration;
+                                        setTimeLeft(nextDuration);
+                                    } else {
+                                        finishSession(autoRepsRef.current, [...roundRepsRef.current]);
+                                        return;
+                                    }
+                                } else {
+                                    // Standard mode: increment round
+                                    if (currentRound < rounds) {
+                                        setCurrentRound(p => p + 1);
+                                        setIsResting(false);
+                                        endTimestampRef.current = Date.now() + duration * 1000;
+                                        createBeep(700, 300, 'sine');
+                                        vibrate([100, 50, 100], true);
+                                        currentBeatRef.current = 0;
+                                        lastTimeLeftRef.current = duration;
+                                        setTimeLeft(duration);
+                                    } else {
+                                        finishSession(autoRepsRef.current, [...roundRepsRef.current]);
+                                        return;
+                                    }
+                                }
+                                
+                            } else {
+                                // Work phase complete - count final beat
+                                const currentDuration = isBlockMode ? activeBlocks[currentBlock].duration : duration;
+                                const finalBeat = Math.floor(currentDuration * (cadence / 60));
+                                if (finalBeat > currentBeatRef.current) {
+                                    currentBeatRef.current = finalBeat;
+                                    const prevRoundsReps = roundRepsRef.current.reduce((a, b) => a + b, 0);
+                                    autoRepsRef.current = prevRoundsReps + finalBeat;
+                                    setAutoReps(autoRepsRef.current);
+                                }
+                                
+                                roundRepsRef.current.push(currentBeatRef.current);
+                                
+                                if (isBlockMode) {
+                                    // Block mode: check for rest or finish
+                                    const currentRestDuration = activeBlocks[currentBlock].restDuration;
+                                    const isLastBlock = currentBlock >= activeBlocks.length - 1;
+                                    
+                                    if (isLastBlock || currentRestDuration === 0) {
+                                        // Last block or no rest -> check if more blocks
+                                        if (isLastBlock) {
+                                            finishSession(autoRepsRef.current, [...roundRepsRef.current]);
+                                            return;
+                                        } else {
+                                            // No rest, go directly to next block
+                                            const nextBlock = currentBlock + 1;
+                                            setCurrentBlock(nextBlock);
+                                            const nextDuration = activeBlocks[nextBlock].duration;
+                                            setDuration(nextDuration);
+                                            setRestDuration(activeBlocks[nextBlock].restDuration);
+                                            endTimestampRef.current = Date.now() + nextDuration * 1000;
+                                            createBeep(700, 300, 'sine');
+                                            vibrate([100, 50, 100], true);
+                                            currentBeatRef.current = 0;
+                                            lastTimeLeftRef.current = nextDuration;
+                                            setTimeLeft(nextDuration);
+                                        }
+                                    } else {
+                                        // Enter rest
+                                        createBeep(selectedSound.restFreq, 200, selectedSound.wave);
+                                        setTimeout(() => createBeep(selectedSound.restFreq, 200, selectedSound.wave), 250);
+                                        vibrate([200, 100, 200], true);
+                                        setIsResting(true);
+                                        endTimestampRef.current = Date.now() + currentRestDuration * 1000;
+                                        lastTimeLeftRef.current = currentRestDuration;
+                                        setTimeLeft(currentRestDuration);
+                                    }
+                                } else {
+                                    // Standard mode
+                                    if (currentRound >= rounds) {
+                                        finishSession(autoRepsRef.current, [...roundRepsRef.current]);
+                                        return;
+                                    } else {
+                                        createBeep(selectedSound.restFreq, 200, selectedSound.wave);
+                                        setTimeout(() => createBeep(selectedSound.restFreq, 200, selectedSound.wave), 250);
+                                        vibrate([200, 100, 200], true);
+                                        setIsResting(true);
+                                        endTimestampRef.current = Date.now() + restDuration * 1000;
+                                        lastTimeLeftRef.current = restDuration;
+                                        setTimeLeft(restDuration);
+                                    }
+                                }
+                            }
+                        } else {
+                            setTimeLeft(newTimeLeft);
+                        }
+                    }
+                    
+                    // Schedule next frame (only here, never inside setTimeLeft)
+                    animationFrameRef.current = requestAnimationFrame(tick);
+                };
+                
+                animationFrameRef.current = requestAnimationFrame(tick);
+                
+                return () => {
+                    if (animationFrameRef.current) {
+                        cancelAnimationFrame(animationFrameRef.current);
+                        animationFrameRef.current = null;
+                    }
+                };
+            }, [isRunning, isPreparing, isResting, duration, restDuration, rounds, currentRound, cadence, selectedSound, createBeep, vibrate, finishSession, isBlockMode, activeBlocks, currentBlock]);
+
+            // ═══════════════════════════════════════════════════════════════
+            // HANDLERS
+            // ═══════════════════════════════════════════════════════════════
+
+            const applyTemplate = (template, category) => {
+                setSelectedExercise(EXERCISES.find(e => e.id === template.exercise));
+                setCadence(template.cadence);
+                setSelectedTemplate(template);
+                setSelectedCategory(category);
+                
+                // Check if this is a block-based template (pyramids)
+                if (template.blocks && template.blocks.length > 0) {
+                    // Block mode
+                    setActiveBlocks(template.blocks);
+                    setCurrentBlock(0);
+                    const firstBlock = template.blocks[0];
+                    setDuration(firstBlock.duration);
+                    setRestDuration(firstBlock.restDuration);
+                    setRounds(template.blocks.length); // Total blocks shown as "rounds"
+                    setTimeLeft(firstBlock.duration);
+                } else {
+                    // Standard mode
+                    setActiveBlocks(null);
+                    setCurrentBlock(0);
+                    setDuration(template.duration);
+                    setRestDuration(template.restDuration);
+                    setRounds(template.rounds);
+                    setTimeLeft(template.duration);
+                }
+                
+                setIsRunning(false);
+                setIsResting(false);
+                setIsPreparing(false);
+                setCurrentRound(1);
+                setAutoReps(0);
+                setDeltaReps(0);
+                setSessionStarted(false);
+                currentBeatRef.current = 0;
+                autoRepsRef.current = 0;
+                roundRepsRef.current = [];
+                lastTimeLeftRef.current = null;
+                releaseWakeLock();
+                setActiveTab('timer');
+            };
+
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            const handleStart = () => {
+                getAudioContext();
+                requestWakeLock();
+                
+                if (!sessionStarted) {
+                    setIsPreparing(true);
+                    setTimeLeft(PREP_TIME);
+                    lastTimeLeftRef.current = PREP_TIME;
+                    endTimestampRef.current = Date.now() + PREP_TIME * 1000;
+                    setAutoReps(0);
+                    setDeltaReps(0);
+                    setCurrentRound(1);
+                    setCurrentBlock(0);
+                    setSessionStarted(true);
+                    currentBeatRef.current = 0;
+                    autoRepsRef.current = 0;
+                    roundRepsRef.current = [];
+                } else {
+                    endTimestampRef.current = Date.now() + timeLeft * 1000;
+                    lastTimeLeftRef.current = timeLeft;
+                    requestWakeLock();
+                }
+                setIsRunning(true);
+            };
+
+            const handlePause = () => {
+                setIsRunning(false);
+                endTimestampRef.current = null;
+                releaseWakeLock();
+            };
+
+            const handleReset = () => {
+                setIsRunning(false);
+                // In block mode, reset to first block's duration
+                if (isBlockMode && activeBlocks.length > 0) {
+                    setTimeLeft(activeBlocks[0].duration);
+                    setDuration(activeBlocks[0].duration);
+                    setRestDuration(activeBlocks[0].restDuration);
+                } else {
+                    setTimeLeft(duration);
+                }
+                setIsResting(false);
+                setIsPreparing(false);
+                setCurrentRound(1);
+                setCurrentBlock(0);
+                setAutoReps(0);
+                setDeltaReps(0);
+                setSessionStarted(false);
+                endTimestampRef.current = null;
+                currentBeatRef.current = 0;
+                autoRepsRef.current = 0;
+                roundRepsRef.current = [];
+                lastTimeLeftRef.current = null;
+                releaseWakeLock();
+            };
+
+            const handleDurationChange = (minutes) => {
+                const newDuration = minutes * 60;
+                setDuration(newDuration);
+                setTimeLeft(newDuration);
+                setIsRunning(false);
+                setIsResting(false);
+                setIsPreparing(false);
+                setCurrentRound(1);
+                setCurrentBlock(0);
+                setActiveBlocks(null); // Exit block mode
+                setAutoReps(0);
+                setDeltaReps(0);
+                setSessionStarted(false);
+                setSelectedTemplate(null);
+                setSelectedCategory(null);
+                endTimestampRef.current = null;
+                currentBeatRef.current = 0;
+                autoRepsRef.current = 0;
+                roundRepsRef.current = [];
+                lastTimeLeftRef.current = null;
+                releaseWakeLock();
+            };
+
+            const clearTemplate = () => {
+                setSelectedTemplate(null);
+                setSelectedCategory(null);
+                setActiveBlocks(null);
+                setCurrentBlock(0);
+            };
+
+            const getStatusInfo = () => {
+                if (isPreparing) return { text: 'PREPARATI', color: 'text-amber-400', bg: 'bg-amber-500/20', border: 'border-amber-500/50' };
+                if (isResting) return { text: 'RECUPERO', color: 'text-cyan-400', bg: 'bg-cyan-500/20', border: 'border-cyan-500/50' };
+                
+                // Block mode: show block info with label
+                if (isBlockMode) {
+                    const blockLabel = activeBlocks[currentBlock]?.label || `${currentBlock + 1}`;
+                    return { 
+                        text: `BLOCK ${currentBlock + 1}/${activeBlocks.length} (${blockLabel})`, 
+                        color: 'text-emerald-400', 
+                        bg: 'bg-emerald-500/20', 
+                        border: 'border-emerald-500/50' 
+                    };
+                }
+                
+                return { text: `ROUND ${currentRound}/${rounds}`, color: 'text-emerald-400', bg: 'bg-emerald-500/20', border: 'border-emerald-500/50' };
+            };
+
+            const getProgressPercent = () => {
+                if (isPreparing) return (timeLeft / PREP_TIME) * 100;
+                if (isResting) return (timeLeft / restDuration) * 100;
+                return (timeLeft / duration) * 100;
+            };
+
+            const getTotalWorkTime = () => {
+                // Calculate total work time (block mode vs standard)
+                const totalSeconds = isBlockMode && activeBlocks 
+                    ? activeBlocks.reduce((s, b) => s + b.duration, 0) 
+                    : duration * rounds;
+                const mins = Math.floor(totalSeconds / 60);
+                return mins >= 60 ? `${Math.floor(mins/60)}h ${mins%60}m` : `${mins}m`;
+            };
+
+            const handleShare = async () => {
+                if (!completedSession) return;
+                
+                const diffReps = completedSession.actualReps - completedSession.plannedReps;
+                const diffText = diffReps === 0 ? '✓ On target' : diffReps > 0 ? `+${diffReps} extra` : `${diffReps} mancate`;
+                
+                const roundsBreakdown = completedSession.roundsData?.length > 1 
+                    ? `\n📋 Rounds: ${completedSession.roundsData.join(' | ')}`
+                    : '';
+                
+                const shareText = `🏋️ Kettlebell Forge Session
+
+⚔️ ${completedSession.exercise}
+📊 ${completedSession.actualReps} reps (${diffText})
+💪 ${completedSession.actualVolume} kg volume
+⏱️ ${Math.floor(completedSession.duration / 60)}min @ ${completedSession.cadence} RPM
+🔔 ${completedSession.weight}${roundsBreakdown}
+
+Forged with KettlebellForge
+NicholasRubini.it`;
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share({ title: 'Kettlebell Forge Session', text: shareText });
+                    } catch (e) {}
+                } else {
+                    try {
+                        await navigator.clipboard.writeText(shareText);
+                        alert('Copiato!');
+                    } catch (e) {}
+                }
+            };
+
+            const status = getStatusInfo();
+
+            // Current round progress
+            const currentRoundProgress = useMemo(() => {
+                if (isPreparing || isResting) return 0;
+                const elapsed = duration - timeLeft;
+                return Math.floor(elapsed * (cadence / 60));
+            }, [isPreparing, isResting, duration, timeLeft, cadence]);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 text-zinc-100 pb-36">
+                    {/* Background */}
+                    <div className="fixed inset-0 opacity-5 pointer-events-none">
+                        <div className="absolute inset-0" style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30z' fill='none' stroke='%23d4a574' stroke-width='0.5'/%3E%3C/svg%3E")`,
+                            backgroundSize: '60px 60px'
+                        }} />
+                    </div>
+
+                    {/* Header - CSS Grid layout for stable centering */}
+                    <header 
+                        className="grid items-center pt-6 pb-2"
+                        style={{ 
+                            gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)',
+                            paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+                            paddingRight: 'max(1rem, env(safe-area-inset-right))'
+                        }}
+                    >
+                        {/* Left spacer */}
+                        <div></div>
+                        
+                        {/* Center: Logo + Title */}
+                        <div className="flex items-center justify-center gap-2 min-w-0">
+                            <KettlebellIcon className="w-7 h-7 text-amber-500 flex-shrink-0" />
+                            <h1 className="text-xl font-bold tracking-wide whitespace-nowrap min-w-0">
+                                <span className="text-amber-500">KETTLEBELL</span>
+                                <span className="text-zinc-500 ml-1 sm:ml-2">FORGE</span>
+                            </h1>
+                        </div>
+                        
+                        {/* Right: Action buttons */}
+                        <div className="flex gap-2 justify-end">
+                            <button
+                                onClick={() => setHapticsEnabled(!hapticsEnabled)}
+                                className="p-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex-shrink-0"
+                            >
+                                <Icon name="vibrate" className={`w-5 h-5 ${hapticsEnabled ? 'text-amber-500' : 'text-zinc-500'}`} />
+                            </button>
+                            <button
+                                onClick={() => setSoundEnabled(!soundEnabled)}
+                                className="p-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50 flex-shrink-0"
+                            >
+                                <Icon name={soundEnabled ? 'volumeOn' : 'volumeOff'} className={`w-5 h-5 ${soundEnabled ? 'text-amber-500' : 'text-zinc-500'}`} />
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Tabs */}
+                    <div className="px-4 py-3">
+                        <div className="flex bg-zinc-800/50 rounded-2xl p-1.5 border border-zinc-700/30">
+                            {[
+                                { id: 'timer', label: 'Timer', icon: 'timer' },
+                                { id: 'templates', label: 'Programmi', icon: 'layers' },
+                                { id: 'custom', label: 'Custom', icon: 'settings' }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex-1 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                                        activeTab === tab.id ? 'bg-amber-500 text-zinc-900 font-bold' : 'text-zinc-400'
+                                    }`}
+                                >
+                                    <Icon name={tab.icon} className="w-4 h-4" />
+                                    <span className="text-sm">{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Completion Modal */}
+                    {completedSession && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                            <div className="bg-zinc-900 border-2 border-amber-500/50 rounded-2xl p-6 max-w-sm w-full max-h-[90vh] overflow-y-auto">
+                                <div className="text-center">
+                                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                        <Icon name="trophy" className="w-8 h-8 text-amber-500" />
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-amber-500 mb-1">VITTORIA!</h2>
+                                    <p className="text-zinc-400 text-sm mb-4">{completedSession.exercise}</p>
+                                    
+                                    {/* Reps comparison */}
+                                    <div className="bg-zinc-800/50 rounded-xl p-4 mb-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-zinc-500 text-sm">Ripetizioni</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-2xl font-bold text-emerald-400">{completedSession.actualReps}</span>
+                                                <span className="text-zinc-500">/</span>
+                                                <span className="text-lg text-zinc-400">{completedSession.plannedReps}</span>
+                                            </div>
+                                        </div>
+                                        {completedSession.actualReps !== completedSession.plannedReps && (
+                                            <div className={`text-sm font-medium ${completedSession.actualReps > completedSession.plannedReps ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {completedSession.actualReps > completedSession.plannedReps 
+                                                    ? `+${completedSession.actualReps - completedSession.plannedReps} reps extra! 🔥`
+                                                    : `${completedSession.actualReps - completedSession.plannedReps} dal target`
+                                                }
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Rounds breakdown */}
+                                    {completedSession.roundsData?.length > 1 && (
+                                        <div className="bg-zinc-800/30 rounded-xl p-3 mb-4">
+                                            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Reps per Round</p>
+                                            <div className="flex flex-wrap gap-2 justify-center">
+                                                {completedSession.roundsData.map((reps, i) => (
+                                                    <div key={i} className="bg-zinc-800 rounded-lg px-3 py-1">
+                                                        <span className="text-xs text-zinc-500">R{i+1}: </span>
+                                                        <span className="text-sm font-bold text-zinc-300">{reps}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    <div className="grid grid-cols-2 gap-3 mb-4">
+                                        <div className="bg-zinc-800/50 rounded-xl p-3">
+                                            <p className="text-xl font-bold text-cyan-400">{completedSession.actualVolume}<span className="text-sm">kg</span></p>
+                                            <p className="text-xs text-zinc-500">Volume</p>
+                                        </div>
+                                        <div className="bg-zinc-800/50 rounded-xl p-3">
+                                            <p className="text-lg font-bold text-amber-400">{completedSession.weight}</p>
+                                            <p className="text-xs text-zinc-500">Carico</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleShare}
+                                            className="flex-1 py-3 bg-zinc-800 text-zinc-300 font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                                        >
+                                            <Icon name="share" className="w-5 h-5" />
+                                            Condividi
+                                        </button>
+                                        <button
+                                            onClick={() => setCompletedSession(null)}
+                                            className="flex-1 py-3 bg-amber-500 text-zinc-900 font-bold rounded-xl active:scale-95 transition-transform"
+                                        >
+                                            Continua
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ═══════════════════════════════════════════════════════════════ */}
+                    {/* TIMER TAB */}
+                    {/* ═══════════════════════════════════════════════════════════════ */}
+                    
+                    {activeTab === 'timer' && (
+                        <div className="px-4">
+                            {/* Template Badge */}
+                            {selectedCategory && selectedTemplate && (
+                                <div className="mb-4 flex items-center justify-between bg-zinc-800/50 rounded-xl p-3 border border-zinc-700/30">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                                            style={{ backgroundColor: selectedCategory.color === 'amber' ? '#fbbf2420' : selectedCategory.color === 'emerald' ? '#34d39920' : selectedCategory.color === 'cyan' ? '#22d3ee20' : '#fb718520' }}>
+                                            <Icon name={selectedCategory.icon} className="w-5 h-5" style={{ color: selectedCategory.color === 'amber' ? '#fbbf24' : selectedCategory.color === 'emerald' ? '#34d399' : selectedCategory.color === 'cyan' ? '#22d3ee' : '#fb7185' }} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-zinc-200">{selectedTemplate.name}</p>
+                                            <p className="text-xs text-zinc-500">{selectedCategory.name}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={clearTemplate} className="p-2 text-zinc-500">
+                                        <Icon name="x" className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Timer Display */}
+                            <div className={`relative rounded-3xl p-6 ${status.bg} border ${status.border} transition-all duration-300 mb-4`}>
+                                <div className="text-center mb-2">
+                                    <span className={`inline-block px-4 py-1 rounded-full text-xs font-bold tracking-wider ${status.color}`}>
+                                        {status.text}
+                                    </span>
+                                </div>
+                                <div className="text-center mb-4">
+                                    <div className={`text-7xl font-mono font-bold tracking-tight transition-all duration-150 ${
+                                        isPreparing && timeLeft <= 3 ? 'text-amber-400 scale-110' : 
+                                        beatPulse && !isResting && !isPreparing ? 'text-emerald-400 scale-105' : 
+                                        isResting ? 'text-cyan-400' : 'text-zinc-100'
+                                    }`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                                        {formatTime(timeLeft)}
+                                    </div>
+                                </div>
+
+                                {/* Cadence Indicator */}
+                                {!isResting && !isPreparing && (
+                                    <div className="flex items-center justify-center gap-4 mb-4">
+                                        <div className="relative">
+                                            <div className={`w-12 h-12 rounded-full border-4 flex items-center justify-center transition-all duration-100 ${
+                                                beatPulse ? 'border-emerald-400 bg-emerald-400/20 scale-110' : 'border-zinc-600'
+                                            }`}>
+                                                <Icon name="flame" className={`w-5 h-5 ${beatPulse ? 'text-emerald-400' : 'text-zinc-500'}`} />
+                                            </div>
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-2xl font-bold">{cadence}</p>
+                                            <p className="text-xs text-zinc-500 uppercase">RPM</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Progress Bar */}
+                                <div className="relative h-3 bg-zinc-800 rounded-full overflow-hidden">
+                                    <div 
+                                        className={`absolute inset-y-0 left-0 rounded-full transition-all duration-300 ${
+                                            isPreparing ? 'bg-gradient-to-r from-amber-600 to-amber-400' :
+                                            isResting ? 'bg-gradient-to-r from-cyan-600 to-cyan-400' :
+                                            'bg-gradient-to-r from-emerald-600 to-emerald-400'
+                                        }`}
+                                        style={{ width: `${getProgressPercent()}%` }}
+                                    />
+                                </div>
+                                
+                                {/* Round/Block Progress */}
+                                {((isBlockMode && activeBlocks.length > 1) || (!isBlockMode && rounds > 1)) && !isPreparing && (
+                                    <div className="mt-3 flex gap-1">
+                                        {isBlockMode ? (
+                                            // Block mode progress
+                                            activeBlocks.map((block, i) => (
+                                                <div key={i} className={`h-1.5 flex-1 rounded-full ${
+                                                    i < currentBlock ? 'bg-amber-500' :
+                                                    i === currentBlock && !isResting ? 'bg-emerald-500' :
+                                                    i === currentBlock && isResting ? 'bg-cyan-500' : 'bg-zinc-700'
+                                                }`} title={block.label || `Block ${i+1}`} />
+                                            ))
+                                        ) : (
+                                            // Standard round progress
+                                            Array.from({ length: rounds }).map((_, i) => (
+                                                <div key={i} className={`h-1.5 flex-1 rounded-full ${
+                                                    i < currentRound - 1 ? 'bg-amber-500' :
+                                                    i === currentRound - 1 && !isResting ? 'bg-emerald-500' :
+                                                    i === currentRound - 1 && isResting ? 'bg-cyan-500' : 'bg-zinc-700'
+                                                }`} />
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* ═══════════════════════════════════════════════════════════════ */}
+                            {/* REPS & VOLUME - Clear triad display */}
+                            {/* ═══════════════════════════════════════════════════════════════ */}
+                            
+                            <div className="mb-4 bg-zinc-800/30 rounded-2xl border border-zinc-700/30 p-4">
+                                {/* Header row: Target vs Actual */}
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                    <div className="bg-zinc-800/50 rounded-xl p-3">
+                                        <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Target</p>
+                                        <p className="text-2xl font-bold text-zinc-400">{plannedRepsTotal}</p>
+                                        <p className="text-xs text-zinc-600">reps programmate</p>
+                                    </div>
+                                    <div className="bg-zinc-800/50 rounded-xl p-3">
+                                        <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Auto</p>
+                                        <p className="text-2xl font-bold text-amber-400">{autoReps}</p>
+                                        <p className="text-xs text-zinc-600">metronomo</p>
+                                    </div>
+                                </div>
+                                
+                                {/* Correction row */}
+                                <div className="flex items-center justify-between py-3 border-t border-b border-zinc-700/30">
+                                    <div>
+                                        <p className="text-sm text-zinc-400">Correzione</p>
+                                        <p className="text-xs text-zinc-600">Reps in più o in meno?</p>
+                                    </div>
+                                    <RepAdjuster 
+                                        value={actualReps}
+                                        delta={deltaReps}
+                                        onDeltaChange={setDeltaReps}
+                                        disabled={!sessionStarted || isPreparing}
+                                    />
+                                </div>
+                                
+                                {/* Volume display */}
+                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                    <div>
+                                        <p className="text-xs text-zinc-500">Volume Target</p>
+                                        <p className="text-lg font-bold text-zinc-400">{plannedVolume} kg</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-zinc-500">Volume Effettivo</p>
+                                        <p className="text-lg font-bold text-emerald-400">{actualVolume} kg</p>
+                                    </div>
+                                </div>
+                                
+                                {/* Round progress */}
+                                {sessionStarted && !isPreparing && !isResting && (
+                                    <div className="pt-3 mt-3 border-t border-zinc-700/30">
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-zinc-500">Round {currentRound}</span>
+                                            <span className="text-emerald-400 font-medium">{currentRoundProgress} / {plannedRepsPerRound} reps</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Stats Row */}
+                            <div className="grid grid-cols-3 gap-2 mb-4">
+                                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-3 text-center">
+                                    <p className="text-lg font-bold text-cyan-400">{getWeightDisplay()}</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase">Carico</p>
+                                </div>
+                                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-3 text-center">
+                                    <p className="text-lg font-bold text-amber-400">{cadence}</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase">RPM</p>
+                                </div>
+                                <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-3 text-center">
+                                    <p className="text-lg font-bold text-rose-400">{rounds}</p>
+                                    <p className="text-[10px] text-zinc-500 uppercase">Rounds</p>
+                                </div>
+                            </div>
+
+                            {/* Quick Edit */}
+                            <button
+                                onClick={() => setShowQuickEdit(!showQuickEdit)}
+                                className="w-full mb-4 py-3 bg-zinc-800/50 border border-zinc-700/30 rounded-xl flex items-center justify-center gap-2 text-zinc-400"
+                            >
+                                <Icon name="edit" className="w-4 h-4" />
+                                <span className="text-sm">Modifica Rapida</span>
+                                <Icon name={showQuickEdit ? 'chevronUp' : 'chevronDown'} className="w-4 h-4" />
+                            </button>
+
+                            {showQuickEdit && (
+                                <div className="mb-4 bg-zinc-800/30 border border-zinc-700/30 rounded-2xl p-4 space-y-4">
+                                    <div>
+                                        <p className="text-xs text-zinc-500 mb-2">Cadenza (RPM)</p>
+                                        <div className="flex gap-2 overflow-x-auto pb-2">
+                                            {CADENCE_OPTIONS.map(rpm => (
+                                                <button
+                                                    key={rpm}
+                                                    onClick={() => { setCadence(rpm); clearTemplate(); }}
+                                                    disabled={isRunning}
+                                                    className={`flex-shrink-0 py-2 px-4 rounded-lg text-sm font-bold transition-all ${
+                                                        cadence === rpm ? 'bg-amber-500 text-zinc-900' : 'bg-zinc-800 border border-zinc-700 text-zinc-300'
+                                                    } ${isRunning ? 'opacity-50' : ''}`}
+                                                >
+                                                    {rpm}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-zinc-500 mb-2">Durata Recupero</p>
+                                        <div className="flex gap-2 overflow-x-auto pb-2">
+                                            {REST_DURATIONS.map(secs => (
+                                                <button
+                                                    key={secs}
+                                                    onClick={() => { setRestDuration(secs); clearTemplate(); }}
+                                                    disabled={isRunning}
+                                                    className={`flex-shrink-0 py-2 px-4 rounded-lg text-sm font-bold transition-all ${
+                                                        restDuration === secs ? 'bg-cyan-500 text-zinc-900' : 'bg-zinc-800 border border-zinc-700 text-zinc-300'
+                                                    } ${isRunning ? 'opacity-50' : ''}`}
+                                                >
+                                                    {secs >= 60 ? `${Math.floor(secs/60)}m` : `${secs}s`}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-zinc-500 mb-2">Rounds</p>
+                                        <div className="flex gap-2 overflow-x-auto pb-2">
+                                            {[1,2,3,4,5,6,8,10].map(r => (
+                                                <button
+                                                    key={r}
+                                                    onClick={() => { setRounds(r); clearTemplate(); }}
+                                                    disabled={isRunning}
+                                                    className={`flex-shrink-0 py-2 px-4 rounded-lg text-sm font-bold transition-all ${
+                                                        rounds === r ? 'bg-amber-500 text-zinc-900' : 'bg-zinc-800 border border-zinc-700 text-zinc-300'
+                                                    } ${isRunning ? 'opacity-50' : ''}`}
+                                                >
+                                                    {r}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Config Summary */}
+                            <div className="bg-zinc-800/30 rounded-xl p-4 border border-zinc-700/30">
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div className="flex items-center gap-2">
+                                        <Icon name={selectedExercise.icon} className="w-4 h-4 text-amber-500" />
+                                        <span className="text-zinc-300">{selectedExercise.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Icon name="clock" className="w-4 h-4 text-emerald-500" />
+                                        <span className="text-zinc-300">{duration/60}m × {rounds}</span>
+                                    </div>
+                                </div>
+                                {isDoubleKettlebell && (
+                                    <div className="mt-3 pt-3 border-t border-zinc-700/30 text-xs text-zinc-500">
+                                        Carico totale: {getTotalLoad()} kg ({getWeightDisplay()})
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ═══════════════════════════════════════════════════════════════ */}
+                    {/* TEMPLATES TAB */}
+                    {/* ═══════════════════════════════════════════════════════════════ */}
+                    
+                    {activeTab === 'templates' && (
+                        <div className="px-4 space-y-3">
+                            <p className="text-zinc-500 text-sm text-center mb-2">Seleziona una categoria</p>
+                            
+                            {WORKOUT_TEMPLATES.map((category) => {
+                                const isExpanded = expandedCategoryId === category.id;
+                                const categoryColor = category.color === 'amber' ? '#fbbf24' : category.color === 'emerald' ? '#34d399' : category.color === 'cyan' ? '#22d3ee' : '#fb7185';
+                                const categoryBg = category.color === 'amber' ? '#fbbf2420' : category.color === 'emerald' ? '#34d39920' : category.color === 'cyan' ? '#22d3ee20' : '#fb718520';
+                                
+                                return (
+                                    <div key={category.id} className="bg-zinc-800/30 rounded-2xl border border-zinc-700/30 overflow-hidden">
+                                        {/* Category Header - Clickable Accordion Toggle */}
+                                        <button
+                                            onClick={() => setExpandedCategoryId(isExpanded ? null : category.id)}
+                                            aria-expanded={isExpanded}
+                                            aria-controls={`category-${category.id}-content`}
+                                            className="w-full p-4 flex items-center gap-3 text-left transition-colors hover:bg-zinc-700/20 active:bg-zinc-700/30"
+                                        >
+                                            <div 
+                                                className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                                                style={{ backgroundColor: categoryBg }}
+                                            >
+                                                <Icon name={category.icon} className="w-5 h-5" style={{ color: categoryColor }} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="font-bold text-zinc-100 truncate">{category.name}</h3>
+                                                    <span 
+                                                        className="text-[10px] px-2 py-0.5 rounded-full flex-shrink-0"
+                                                        style={{ backgroundColor: categoryBg, color: categoryColor }}
+                                                    >
+                                                        {category.variants.length}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-zinc-500 truncate">{category.description}</p>
+                                            </div>
+                                            <Icon 
+                                                name={isExpanded ? 'chevronUp' : 'chevronDown'} 
+                                                className="w-5 h-5 text-zinc-500 flex-shrink-0 transition-transform" 
+                                            />
+                                        </button>
+                                        
+                                        {/* Category Content - Expanded Templates */}
+                                        {isExpanded && (
+                                            <div 
+                                                id={`category-${category.id}-content`}
+                                                className="border-t border-zinc-700/30 p-3 space-y-2"
+                                            >
+                                                {category.variants.map((template) => {
+                                                    const isSelected = selectedTemplate?.name === template.name && selectedCategory?.id === category.id;
+                                                    const hasBlocks = template.blocks && template.blocks.length > 0;
+                                                    
+                                                    // Build meta string
+                                                    let metaString;
+                                                    if (hasBlocks) {
+                                                        const totalDuration = template.blocks.reduce((s, b) => s + b.duration, 0);
+                                                        metaString = `${template.blocks.length} blocchi • ${Math.floor(totalDuration/60)}' totali • ${template.cadence} rpm`;
+                                                    } else {
+                                                        // Format rest: 60 => "1'", 90 => "1'30\"", 180 => "3'"
+                                                        const fmtRest = (secs) => {
+                                                            const mins = Math.floor(secs / 60);
+                                                            const remainSecs = secs % 60;
+                                                            if (mins === 0) return `${secs}"`;
+                                                            if (remainSecs === 0) return `${mins}'`;
+                                                            return `${mins}'${remainSecs}"`;
+                                                        };
+                                                        metaString = `${template.rounds}×${template.duration/60}' • r ${fmtRest(template.restDuration)} • ${template.cadence} rpm`;
+                                                    }
+                                                    
+                                                    return (
+                                                        <button
+                                                            key={template.name}
+                                                            onClick={() => applyTemplate(template, category)}
+                                                            className={`w-full p-3 rounded-xl text-left transition-all ${
+                                                                isSelected
+                                                                    ? 'bg-amber-500/20 border-2 border-amber-500/50'
+                                                                    : 'bg-zinc-900/50 border border-zinc-700/30 active:bg-zinc-700/50'
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="font-semibold text-zinc-200 text-sm truncate">{template.name}</p>
+                                                                    <p className="text-xs text-zinc-500 truncate">{metaString}</p>
+                                                                </div>
+                                                                <IntensityDots level={template.intensity} color={category.color} />
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* ═══════════════════════════════════════════════════════════════ */}
+                    {/* CUSTOM TAB */}
+                    {/* ═══════════════════════════════════════════════════════════════ */}
+                    
+                    {activeTab === 'custom' && (
+                        <div className="px-4 space-y-4">
+                            <p className="text-zinc-500 text-sm text-center mb-4">Crea la tua sessione</p>
+
+                            <SettingGroup title="Esercizio" icon="dumbbell">
+                                <div className="grid grid-cols-2 gap-2">
+                                    {EXERCISES.map(exercise => (
+                                        <button
+                                            key={exercise.id}
+                                            onClick={() => { setSelectedExercise(exercise); clearTemplate(); }}
+                                            className={`p-3 rounded-xl text-left transition-all ${
+                                                selectedExercise.id === exercise.id
+                                                    ? 'bg-amber-500 text-zinc-900'
+                                                    : 'bg-zinc-800/80 border border-zinc-700/50 text-zinc-300 active:bg-zinc-700'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Icon name={exercise.icon} className="w-4 h-4" />
+                                                <span className="font-bold text-sm">{exercise.name}</span>
+                                            </div>
+                                            <p className={`text-xs ${selectedExercise.id === exercise.id ? 'text-zinc-700' : 'text-zinc-500'}`}>
+                                                {exercise.description}
+                                            </p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </SettingGroup>
+
+                            <SettingGroup title="Kettlebell" icon="dumbbell">
+                                <div className="flex gap-2 mb-3">
+                                    <OptionButton selected={!isDoubleKettlebell} onClick={() => { setIsDoubleKettlebell(false); setKettlebellWeight(24); }}>
+                                        Singolo
+                                    </OptionButton>
+                                    <OptionButton selected={isDoubleKettlebell} onClick={() => { setIsDoubleKettlebell(true); setKettlebellWeight(24); }}>
+                                        Doppio
+                                    </OptionButton>
+                                </div>
+                                <p className="text-xs text-zinc-500 mb-2">
+                                    {isDoubleKettlebell ? 'Peso per mano (kg)' : 'Peso kettlebell (kg)'}
+                                </p>
+                                <div className="grid grid-cols-5 gap-2">
+                                    {(isDoubleKettlebell ? DOUBLE_KB_WEIGHTS : SINGLE_KB_WEIGHTS).map(weight => (
+                                        <OptionButton
+                                            key={weight}
+                                            selected={kettlebellWeight === weight}
+                                            onClick={() => setKettlebellWeight(weight)}
+                                            size="sm"
+                                        >
+                                            {weight}
+                                        </OptionButton>
+                                    ))}
+                                </div>
+                                {isDoubleKettlebell && (
+                                    <p className="text-xs text-amber-500/70 mt-2">
+                                        Carico totale: {kettlebellWeight * 2} kg (2×{kettlebellWeight}kg)
+                                    </p>
+                                )}
+                            </SettingGroup>
+
+                            <SettingGroup title="Tempo" icon="clock">
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-xs text-zinc-500 mb-2">Durata Lavoro (min)</p>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {DURATION_OPTIONS.map(mins => (
+                                                <OptionButton key={mins} selected={duration === mins * 60} onClick={() => handleDurationChange(mins)} color="emerald" size="sm">
+                                                    {mins}m
+                                                </OptionButton>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-zinc-500 mb-2">Durata Recupero</p>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {REST_DURATIONS.map(secs => (
+                                                <OptionButton key={secs} selected={restDuration === secs} onClick={() => { setRestDuration(secs); clearTemplate(); }} color="cyan" size="sm">
+                                                    {secs >= 60 ? `${Math.floor(secs/60)}m${secs%60 > 0 ? secs%60 : ''}` : `${secs}s`}
+                                                </OptionButton>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </SettingGroup>
+
+                            <SettingGroup title="Cadenza & Rounds" icon="gauge">
+                                <div className="space-y-4">
+                                    <div>
+                                        <p className="text-xs text-zinc-500 mb-2">Cadenza (RPM)</p>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {CADENCE_OPTIONS.map(rpm => (
+                                                <OptionButton key={rpm} selected={cadence === rpm} onClick={() => { setCadence(rpm); clearTemplate(); }} size="sm">
+                                                    {rpm}
+                                                </OptionButton>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-zinc-500 mb-2">Rounds</p>
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {ROUNDS_OPTIONS.map(r => (
+                                                <OptionButton key={r} selected={rounds === r} onClick={() => { setRounds(r); clearTemplate(); }} size="sm">
+                                                    {r}
+                                                </OptionButton>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </SettingGroup>
+
+                            <SettingGroup title="Suono" icon="volumeOn">
+                                <div className="grid grid-cols-3 gap-2">
+                                    {SOUND_OPTIONS.map(sound => (
+                                        <OptionButton key={sound.id} selected={selectedSound.id === sound.id} onClick={() => { setSelectedSound(sound); createBeep(sound.workFreq, 150, sound.wave); }} size="sm">
+                                            {sound.name}
+                                        </OptionButton>
+                                    ))}
+                                </div>
+                            </SettingGroup>
+
+                            {/* Summary */}
+                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
+                                <h4 className="text-amber-500 font-bold text-sm mb-3 flex items-center gap-2">
+                                    <Icon name="info" className="w-4 h-4" />
+                                    Riepilogo Sessione
+                                </h4>
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                        <p className="text-zinc-500 text-xs">Tempo Lavoro</p>
+                                        <p className="text-zinc-200 font-bold">{getTotalWorkTime()}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-zinc-500 text-xs">Reps Target</p>
+                                        <p className="text-zinc-200 font-bold">{plannedRepsTotal}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-zinc-500 text-xs">Volume Target</p>
+                                        <p className="text-zinc-200 font-bold">{plannedVolume} kg</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-zinc-500 text-xs">Durata Totale</p>
+                                        <p className="text-zinc-200 font-bold">{Math.round((duration * rounds + restDuration * Math.max(0, rounds - 1)) / 60)}m</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setActiveTab('timer')}
+                                    className="w-full mt-4 py-3 bg-amber-500 text-zinc-900 font-bold rounded-xl active:scale-95 transition-transform"
+                                >
+                                    Inizia Allenamento →
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Bottom Controls */}
+                    <div className="fixed bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur-lg border-t border-zinc-800 px-4 py-4 pb-6">
+                        <div className="flex items-center justify-center gap-4 max-w-md mx-auto">
+                            <button
+                                onClick={handleReset}
+                                disabled={!sessionStarted}
+                                className="p-4 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300 disabled:opacity-30 active:bg-zinc-700 transition-all"
+                            >
+                                <Icon name="reset" className="w-6 h-6" />
+                            </button>
+                            
+                            {isRunning ? (
+                                <button
+                                    onClick={handlePause}
+                                    className="p-6 rounded-full bg-gradient-to-b from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/30 active:scale-95 transition-all"
+                                >
+                                    <Icon name="pause" className="w-8 h-8" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleStart}
+                                    className="p-6 rounded-full bg-gradient-to-b from-amber-500 to-amber-600 text-zinc-900 shadow-lg shadow-amber-500/30 active:scale-95 transition-all"
+                                >
+                                    <Icon name="play" className="w-8 h-8 ml-1" />
+                                </button>
+                            )}
+                            
+                            <div className="p-4 rounded-full bg-zinc-800/50 border border-zinc-700/50">
+                                <KettlebellIcon className="w-6 h-6 text-amber-500/50" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="text-center py-8 px-4 mt-4">
+                        <p className="text-zinc-600 text-xs tracking-widest uppercase">Forged by</p>
+                        <p className="text-amber-500/60 text-sm font-bold tracking-wider mt-1">NicholasRubini.it</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // ═══════════════════════════════════════════════════════════════
+        // PWA Service Worker
+        // ═══════════════════════════════════════════════════════════════
+        
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'kb-forge-v8';
+                    const ASSETS = [
+                        './',
+                        './index.html',
+                        'https://cdn.tailwindcss.com',
+                        'https://unpkg.com/react@18/umd/react.production.min.js',
+                        'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
+                        'https://unpkg.com/@babel/standalone/babel.min.js',
+                        'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap'
+                    ];
+                    
+                    self.addEventListener('install', e => {
+                        e.waitUntil(
+                            caches.open(CACHE_NAME).then(cache => {
+                                return Promise.allSettled(ASSETS.map(url => 
+                                    cache.add(url).catch(() => {})
+                                ));
+                            })
+                        );
+                        self.skipWaiting();
+                    });
+                    
+                    self.addEventListener('activate', e => {
+                        e.waitUntil(
+                            caches.keys().then(keys => 
+                                Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+                            )
+                        );
+                        e.waitUntil(clients.claim());
+                    });
+                    
+                    self.addEventListener('fetch', e => {
+                        if (e.request.mode === 'navigate') {
+                            e.respondWith(
+                                fetch(e.request).catch(() => caches.match('./') || caches.match('./index.html'))
+                            );
+                            return;
+                        }
+                        
+                        if (e.request.url.includes('cdn') || e.request.url.includes('unpkg') || e.request.url.includes('fonts') || e.request.url.includes('gstatic')) {
+                            e.respondWith(
+                                caches.match(e.request).then(cached => {
+                                    if (cached) return cached;
+                                    return fetch(e.request).then(res => {
+                                        const clone = res.clone();
+                                        caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+                                        return res;
+                                    }).catch(() => new Response('', { status: 404 }));
+                                })
+                            );
+                            return;
+                        }
+                        
+                        e.respondWith(
+                            fetch(e.request).catch(() => caches.match(e.request))
+                        );
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+            });
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<NorseKettlebellTimer />);
+    </script>
+</body>
+</html>
